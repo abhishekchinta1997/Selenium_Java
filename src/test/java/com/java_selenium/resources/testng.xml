@@ -1,0 +1,18 @@
+<suite name="Suite" parallel="tests" thread-count="3">
+    <!--<test name="Test1">
+        <classes>
+            <class name="com.java_selenium.tests.web_tests.Test1"/>
+        </classes>
+    </test>
+    <test name="Test2">
+        <classes>
+            <class name="com.java_selenium.tests.db_tests.DB_Test_01"/>
+        </classes>
+    </test>-->
+
+    <test name="Hotel API Tests">
+        <classes>
+            <class name="com.java_selenium.tests.api_tests.Hotel_API_Test2"/>
+        </classes>
+    </test>
+</suite>
