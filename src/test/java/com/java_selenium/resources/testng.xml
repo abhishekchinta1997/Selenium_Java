@@ -1,7 +1,7 @@
 <suite name="Suite" parallel="tests" thread-count="3">
     <!--<test name="Test1">
         <classes>
-            <class name="com.java_selenium.tests.web_tests.Test1"/>
+            <class name="com.java_selenium.tests.web_ui_tests.Test1"/>
         </classes>
     </test>
     <test name="Test2">

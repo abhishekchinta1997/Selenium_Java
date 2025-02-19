@@ -1,9 +1,8 @@
-package com.java_selenium.tests.web_tests;
+package com.java_selenium.tests.web_ui_tests;
 
 import com.java_selenium.base.BaseClass;
 import com.java_selenium.utils.extent_reports_manager.ExtentTestManager;
 import org.openqa.selenium.WebDriver;
-import org.testng.Reporter;
 import org.testng.annotations.Test;
 
 public class Test1 extends BaseClass
