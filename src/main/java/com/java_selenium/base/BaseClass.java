@@ -11,6 +11,10 @@ import org.openqa.selenium.WebDriver;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -20,7 +24,6 @@ import org.testng.annotations.*;
 
 public class BaseClass
 {
-    private String browserName;
     private ThreadLocal<WebDriver> driver = new ThreadLocal<>();
 
     // Before the first test method runs
@@ -57,7 +60,7 @@ public class BaseClass
         ExtentTestManager.CreateTest(className, methodName);
 
         // Get browser name from the system or configuration
-        browserName = System.getProperty("browserName", "chrome");
+        String browserName = System.getProperty("browserName", "chrome");
         if (browserName == null || browserName.isEmpty())
         {
             throw new IllegalArgumentException("Browser name cannot be null or empty");
@@ -101,30 +104,53 @@ public class BaseClass
     @AfterMethod
     public void AfterTest(ITestResult result)
     {
-        // Determine test result
-        String status = result.getStatus() == ITestResult.FAILURE ? "FAIL" : (result.getStatus() == ITestResult.SKIP ? "SKIP" : "PASS");
-        String stackTrace = result.getThrowable() != null ? "Stack Trace: " + result.getThrowable().getMessage() : "";
+        // Determine test result status and stack trace
+        String stackTrace = result.getThrowable() != null ?
+                "<pre>Message: <br>" + result.getThrowable().getMessage() +
+                        "<br><br>Stack Trace: <br>" + Arrays.toString(result.getThrowable().getStackTrace()) + "</pre>" : "";
+
+        Date time = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("h_mm_ss");
+        String formattedTime = dateFormat.format(time);
+        String screenShotName = "Screenshot_" + formattedTime + ".png";
+
+        // Handle FAILURE
         if (result.getStatus() == ITestResult.FAILURE)
         {
-            ExtentTestManager.GetTest().fail("Test failed", CaptureScreenshot(GetDriver(), "Screenshot"));
+            // Apply red color formatting for the message and stack trace
+            String failureMessage = "<span style='color:red;'>Test failed</span>";
+            String failureStackTrace = stackTrace.isEmpty() ? "" : "<span style='color:red;'>" + stackTrace + "</span>";
+
+            ExtentTestManager.GetTest().fail(failureMessage, CaptureScreenshot(GetDriver(), screenShotName));
+            if (!stackTrace.isEmpty())
+            {
+                ExtentTestManager.GetTest().fail(failureStackTrace);
+                ExtentTestManager.GetTest().fail("Test Ended with Fail");
+            }
         }
         else if (result.getStatus() == ITestResult.SKIP)
         {
             ExtentTestManager.GetTest().warning("Test skipped");
+            if (!stackTrace.isEmpty())
+            {
+                ExtentTestManager.GetTest().warning(stackTrace);
+                ExtentTestManager.GetTest().warning("Test Ended with Warning");
+            }
         }
-        else
+        // Handle PASS
+        else if (result.getStatus() == ITestResult.SUCCESS)
         {
-            ExtentTestManager.GetTest().pass("Test passed");
+            ExtentTestManager.GetTest().pass("Test Ended with Pass");
         }
 
-        if (!stackTrace.isEmpty())
-        {
-            ExtentTestManager.GetTest().info(stackTrace);
-        }
+        ExtentTestManager.clearTest(); // Clear the ThreadLocal reference to the current test
 
         GetDriver().quit();  // Quit the browser driver after the test
         driver.remove();  // Clean up the thread-local instance
     }
+
+
+
 
     // Capture screenshot method
     public static Media CaptureScreenshot(WebDriver driver, String screenshotName)
@@ -134,21 +160,24 @@ public class BaseClass
     }
 
     // Logs an informational message in the test report
-    public static ExtentTest LogInfo(String msg)
+    public static void LogInfo(String msg)
     {
-        return ExtentTestManager.GetTest().info(msg);
+        ExtentTestManager.GetTest().info(msg);
     }
+
 
     // Logs a pass message in the test report when a test passes
     public static ExtentTest LogPass(String msg)
     {
-        return ExtentTestManager.GetTest().pass(msg);
+        ExtentTestManager.GetTest().pass(msg);
+        return ExtentTestManager.GetTest();
     }
 
     // Logs a fail message in the test report when a test fails
     public static ExtentTest LogFail(String msg)
     {
-        return ExtentTestManager.GetTest().fail(msg);
+        ExtentTestManager.GetTest().fail(msg);
+        return ExtentTestManager.GetTest();
     }
 
 }

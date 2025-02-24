@@ -1,9 +1,10 @@
-package com.java_selenium.utils.extent_reports_manager;
+package com.java_selenium.utils.extent_reports_manager_db;
 
 import com.aventstack.extentreports.ExtentTest;
+
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ExtentTestManager
+public class ExtentTestManagerDB
 {
     // Map to store parent test instances by their names.
     private static final ConcurrentHashMap<String, ExtentTest> parentTestMap = new ConcurrentHashMap<>();
@@ -20,9 +21,11 @@ public class ExtentTestManager
     public static ExtentTest CreateParentTest(String testName)
     {
         synchronized (synclock)
-        {  // Ensure thread safety when creating a parent test
-            parentTest.set(ExtentManager.getInstance().createTest(testName));
-            return parentTest.get();
+        {
+            ExtentTest test = ExtentManagerDB.getInstance().createTest(testName);
+            parentTest.set(test);
+            parentTestMap.put(testName, test);
+            return test;
         }
     }
 
@@ -31,43 +34,35 @@ public class ExtentTestManager
     public static ExtentTest CreateTest(String parentName, String testName)
     {
         synchronized (synclock)
-        {   // Ensure thread safety when creating child tests
+        {
             ExtentTest parentTestInstance;
-
-            // Check if the parent test already exists in the map
             if (!parentTestMap.containsKey(parentName))
             {
-                // If not, create a new parent test and add it to the map
-                parentTestInstance = ExtentManager.getInstance().createTest(parentName);
+                parentTestInstance = ExtentManagerDB.getInstance().createTest(parentName);
                 parentTestMap.put(parentName, parentTestInstance);
             }
             else
             {
-                // Retrieve the existing parent test
                 parentTestInstance = parentTestMap.get(parentName);
             }
-
-            // Set the parent test and create a child test under it
             parentTest.set(parentTestInstance);
-            childTest.set(parentTestInstance.createNode(testName));
-            return childTest.get();
+            ExtentTest test = parentTestInstance.createNode(testName);
+            childTest.set(test);
+            return test;
         }
     }
 
-    // Creates a method-level test under the current parent test.
     public static ExtentTest CreateMethod(String testName)
     {
         synchronized (synclock)
-        {   // Ensure thread safety when creating a method-level test
-            // Check if parentTest is null before using it
+        {
             if (parentTest.get() == null)
             {
                 throw new IllegalStateException("Parent test has not been created yet.");
             }
-
-            // Create a new node (method-level test) under the current parent test
-            childTest.set(parentTest.get().createNode(testName));
-            return childTest.get();
+            ExtentTest test = parentTest.get().createNode(testName);
+            childTest.set(test);
+            return test;
         }
     }
 
@@ -90,7 +85,8 @@ public class ExtentTestManager
     }
 
     // Clear the ThreadLocal instances for parent and child tests
-    public static void clearTest() {
+    public static void clearTest()
+    {
         parentTest.remove();
         childTest.remove();
     }
