@@ -66,9 +66,23 @@ public class BaseClass
             throw new IllegalArgumentException("Browser name cannot be null or empty");
         }
 
-        InitBrowser(browserName);
-        driver.get().manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
-        driver.get().manage().window().maximize();
+        switch (browserName.toLowerCase())
+        {
+            case "firefox":
+                driver.set(new FirefoxDriver());
+                break;
+            case "chrome":
+                driver.set(new ChromeDriver());
+                break;
+            case "edge":
+                driver.set(new EdgeDriver());
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported browser: " + browserName);
+        }
+
+        //GetDriver().manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
+        GetDriver().manage().window().maximize();
     }
 
 
@@ -82,23 +96,6 @@ public class BaseClass
         return driver.get();
     }
 
-    // Initialize the browser based on the name
-    public void InitBrowser(String browserName)
-    {
-        switch (browserName.toLowerCase()) {
-            case "firefox":
-                driver.set(new FirefoxDriver());
-                break;
-            case "chrome":
-                driver.set(new ChromeDriver());
-                break;
-            case "edge":
-                driver.set(new EdgeDriver());
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported browser: " + browserName);
-        }
-    }
 
     // After each test method runs
     @AfterMethod
