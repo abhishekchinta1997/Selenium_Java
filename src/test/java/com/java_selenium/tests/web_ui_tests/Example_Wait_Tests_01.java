@@ -18,6 +18,7 @@ import java.time.Duration;
 
 public class Example_Wait_Tests_01 extends BaseClass
 {
+    // Test
     @Test (priority = 1)
     public void Test_Implicit_Wait()
     {
