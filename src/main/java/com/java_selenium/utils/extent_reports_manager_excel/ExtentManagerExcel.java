@@ -1,4 +1,4 @@
-package com.java_selenium.utils.extent_reports_manager_db;
+package com.java_selenium.utils.extent_reports_manager_excel;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
@@ -6,7 +6,7 @@ import com.aventstack.extentreports.reporter.configuration.Theme;
 
 import java.nio.file.Paths;
 
-public class ExtentManagerDB
+public class ExtentManagerExcel
 {
     // Lazy initialization of ExtentReports to ensure the instance is created only once when accessed
     private static final ExtentReports INSTANCE = new ExtentReports();
@@ -30,14 +30,14 @@ public class ExtentManagerDB
 
             // Define the path for the generated HTML report (index.html in the project root)
             // Change reportPath to use 'target' folder
-            String reportPath = Paths.get(projectDirectory, "target", "extent-reports", "extent_reports_db.html").toString();
+            String reportPath = Paths.get(projectDirectory, "target", "extent-reports", "extent_reports_excel.html").toString();
 
             // Create a new ExtentSparkReporter to generate an HTML report at the specified path
             ExtentSparkReporter htmlReporter = new ExtentSparkReporter(reportPath);
 
             // Configure the properties of the report
-            htmlReporter.config().setDocumentTitle("DB/Extent Reports/TestNG");  // Set the document title
-            htmlReporter.config().setReportName("DB/Extent Reports/TestNG");    // Set the report name
+            htmlReporter.config().setDocumentTitle("Excel/Extent Reports/TestNG");  // Set the document title
+            htmlReporter.config().setReportName("Excel/Extent Reports/TestNG");    // Set the report name
             htmlReporter.config().setTheme(Theme.DARK);  // Set the theme of the report to dark
 
             // Attach the configured reporter to the ExtentReports instance
@@ -57,7 +57,7 @@ public class ExtentManagerDB
 
     // Private constructor to prevent instantiation of the ExtentManager class
     // Ensures that the class can only be accessed through the static getInstance() method
-    private ExtentManagerDB()
+    private ExtentManagerExcel()
     {
     }
 }

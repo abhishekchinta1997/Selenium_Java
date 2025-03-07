@@ -28,7 +28,7 @@ public class ExtentManager
 
             // Define the path for the generated HTML report (index.html in the project root)
             // Change reportPath to use 'target' folder
-            String reportPath = Paths.get(projectDirectory, "target", "extent-reports", "index.html").toString();
+            String reportPath = Paths.get(projectDirectory, "target", "extent-reports", "extent_reports_web.html").toString();
 
             // Create a new ExtentSparkReporter to generate an HTML report at the specified path
             ExtentSparkReporter htmlReporter = new ExtentSparkReporter(reportPath);
