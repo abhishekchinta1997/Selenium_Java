@@ -1,7 +1,7 @@
 package com.java_selenium.tests.excel_tests;
 
 import com.aventstack.extentreports.markuputils.MarkupHelper;
-import com.java_selenium.base.BaseClass_Excel;
+import com.java_selenium.base.BaseClass;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.testng.annotations.Test;
@@ -10,7 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class Excel_Tests_01 extends BaseClass_Excel
+public class Excel_Tests_01 extends BaseClass
 {
     @Test
     public void Get_Excel_Data_Test() throws IOException
@@ -90,4 +90,6 @@ public class Excel_Tests_01 extends BaseClass_Excel
         file.close();
 
     }
+
+
 }

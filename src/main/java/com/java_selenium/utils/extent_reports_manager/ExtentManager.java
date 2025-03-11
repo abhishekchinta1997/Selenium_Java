@@ -7,54 +7,70 @@ import java.nio.file.Paths;
 
 public class ExtentManager
 {
-    // Lazy initialization of ExtentReports to ensure the instance is created only once when accessed
+    // Singleton instance of ExtentReports to ensure a single report is created throughout the test execution
     private static final ExtentReports INSTANCE = new ExtentReports();
 
-    // Public static method to access the single instance of ExtentReports
-    public static ExtentReports getInstance() {
+    // Returns the single instance of ExtentReports
+    public static ExtentReports getInstance()
+    {
         return INSTANCE;
     }
 
-    // Static block to initialize the ExtentReports instance
-    static {
-        // Get the current working directory (where the executable is located)
+    // Initializes the ExtentReports with a custom report path based on the test type
+    public static void initialize(String testType)
+    {
+        // Get the current working directory of the project
         String workingDirectory = System.getProperty("user.dir");
 
-        // Check if the working directory is not null
         if (workingDirectory != null)
         {
-            // Get the project's directory by moving two levels up from the working directory
+            // Assign the project directory based on the working directory
             String projectDirectory = new String(workingDirectory);
+            String reportPath;
 
-            // Define the path for the generated HTML report (index.html in the project root)
-            // Change reportPath to use 'target' folder
-            String reportPath = Paths.get(projectDirectory, "target", "extent-reports", "extent_reports_web.html").toString();
+            // Determine the report file path based on the type of test (DB, Excel, or Web)
+            switch (testType.toLowerCase())
+            {
+                case "db":
+                    // Set report path for database tests
+                    reportPath = Paths.get(projectDirectory, "target", "extent-reports", "extent_reports_db.html").toString();
+                    break;
+                case "excel":
+                    // Set report path for Excel tests
+                    reportPath = Paths.get(projectDirectory, "target", "extent-reports", "extent_reports_excel.html").toString();
+                    break;
+                case "web":
+                default:
+                    // Set report path for web tests (default case)
+                    reportPath = Paths.get(projectDirectory, "target", "extent-reports", "extent_reports_web.html").toString();
+                    break;
+            }
 
-            // Create a new ExtentSparkReporter to generate an HTML report at the specified path
-            ExtentSparkReporter htmlReporter = new ExtentSparkReporter(reportPath);
+            // Create a reporter for generating the HTML report
+            ExtentSparkReporter reporter = new ExtentSparkReporter(reportPath);
+            // Set the document title for the report
+            reporter.config().setDocumentTitle("Extent Reports/TestNG");
+            // Set the report name for the report
+            reporter.config().setReportName("Extent Reports/TestNG");
+            // Set the theme of the report to DARK
+            reporter.config().setTheme(Theme.DARK);
 
-            // Configure the properties of the report
-            htmlReporter.config().setDocumentTitle("Extent Reports/TestNG");  // Set the document title
-            htmlReporter.config().setReportName("Extent Reports/TestNG");    // Set the report name
-            htmlReporter.config().setTheme(Theme.DARK);  // Set the theme of the report to dark
+            // Attach the reporter to the ExtentReports instance
+            INSTANCE.attachReporter(reporter);
 
-            // Attach the configured reporter to the ExtentReports instance
-            INSTANCE.attachReporter(htmlReporter);
-
-            // Add system information to the report (useful for reporting context)
+            // Set system info that will be displayed in the report
             INSTANCE.setSystemInfo("Application", "Practice Project");
             INSTANCE.setSystemInfo("Environment", "QA");
-
+            INSTANCE.setSystemInfo("Type of Test", testType);
         }
         else
         {
-            // Throw an exception if the working directory is null
+            // Throw an exception if the working directory cannot be determined
             throw new IllegalStateException("Working directory could not be determined. Please check the application's environment.");
         }
     }
 
     // Private constructor to prevent instantiation of the ExtentManager class
-    // Ensures that the class can only be accessed through the static getInstance() method
     private ExtentManager()
     {
     }

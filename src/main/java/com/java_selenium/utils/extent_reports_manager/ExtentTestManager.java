@@ -5,95 +5,147 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ExtentTestManager
 {
-    // Map to store parent test instances by their names.
+    // A ConcurrentHashMap to store parent tests by their name for later retrieval
     private static final ConcurrentHashMap<String, ExtentTest> parentTestMap = new ConcurrentHashMap<>();
 
-    // Thread-local variables to store the parent and child test instances.
+    // ThreadLocal to store the current parent test for each thread
     private static final ThreadLocal<ExtentTest> parentTest = ThreadLocal.withInitial(() -> null);
 
+    // ThreadLocal to store the current child test for each thread
     private static final ThreadLocal<ExtentTest> childTest = ThreadLocal.withInitial(() -> null);
 
-    // Lock object to ensure thread safety when creating tests.
+    // A lock object used for synchronizing access to the test creation methods
     private static final Object synclock = new Object();
 
-    // Creates a new parent test with the specified name.
+    /**
+     * Creates a parent test and stores it in the map and in the ThreadLocal for the current thread.
+     *
+     * @param testName The name of the parent test.
+     * @return The created ExtentTest object for the parent test.
+     */
     public static ExtentTest CreateParentTest(String testName)
     {
+        // Synchronizing to ensure that the test creation is thread-safe
         synchronized (synclock)
-        {  // Ensure thread safety when creating a parent test
-            parentTest.set(ExtentManager.getInstance().createTest(testName));
-            return parentTest.get();
+        {
+            // Create a new parent test using the ExtentManager
+            ExtentTest test = ExtentManager.getInstance().createTest(testName);
+
+            // Store the created parent test in the ThreadLocal and map
+            parentTest.set(test);
+            parentTestMap.put(testName, test);
+
+            // Return the created test
+            return test;
         }
     }
 
-    // Creates a child test under an existing parent test.
-    // If the parent test doesn't exist in the map, it creates a new one.
+    /**
+     * Creates a child test under the given parent test name.
+     *
+     * @param parentName The name of the parent test.
+     * @param testName   The name of the child test to be created.
+     * @return The created ExtentTest object for the child test.
+     */
     public static ExtentTest CreateTest(String parentName, String testName)
     {
+        // Synchronizing to ensure that the test creation is thread-safe
         synchronized (synclock)
-        {   // Ensure thread safety when creating child tests
+        {
             ExtentTest parentTestInstance;
 
-            // Check if the parent test already exists in the map
+            // If the parent test doesn't exist, create it and store it
             if (!parentTestMap.containsKey(parentName))
             {
-                // If not, create a new parent test and add it to the map
                 parentTestInstance = ExtentManager.getInstance().createTest(parentName);
                 parentTestMap.put(parentName, parentTestInstance);
             }
             else
             {
-                // Retrieve the existing parent test
+                // Retrieve the existing parent test from the map
                 parentTestInstance = parentTestMap.get(parentName);
             }
 
-            // Set the parent test and create a child test under it
+            // Set the parent test for the current thread
             parentTest.set(parentTestInstance);
-            childTest.set(parentTestInstance.createNode(testName));
-            return childTest.get();
+
+            // Create a child test (node) under the parent test
+            ExtentTest test = parentTestInstance.createNode(testName);
+
+            // Set the child test for the current thread
+            childTest.set(test);
+
+            // Return the created child test
+            return test;
         }
     }
 
-    // Creates a method-level test under the current parent test.
+    /**
+     * Creates a method-level test (child test) under the current parent test.
+     *
+     * @param testName The name of the method-level test.
+     * @return The created ExtentTest object for the method-level test.
+     * @throws IllegalStateException if the parent test has not been created yet.
+     */
     public static ExtentTest CreateMethod(String testName)
     {
+        // Synchronizing to ensure thread-safety during method-level test creation
         synchronized (synclock)
-        {   // Ensure thread safety when creating a method-level test
-            // Check if parentTest is null before using it
+        {
+            // Check if the parent test is not created yet
             if (parentTest.get() == null)
             {
                 throw new IllegalStateException("Parent test has not been created yet.");
             }
 
-            // Create a new node (method-level test) under the current parent test
-            childTest.set(parentTest.get().createNode(testName));
-            return childTest.get();
+            // Create a method-level test (child test) under the current parent test
+            ExtentTest test = parentTest.get().createNode(testName);
+
+            // Set the child test for the current thread
+            childTest.set(test);
+
+            // Return the created method-level test
+            return test;
         }
     }
 
-    // Retrieves the current method-level test (child test).
+    /**
+     * Retrieves the current method-level test (child test) for the current thread.
+     *
+     * @return The current ExtentTest object for the method-level test.
+     */
     public static ExtentTest GetMethod()
     {
+        // Synchronizing to ensure thread-safe retrieval of the child test
         synchronized (synclock)
-        { // Ensure thread safety when accessing the child test
+        {
+            // Return the current method-level test
             return childTest.get();
         }
     }
 
-    // Retrieves the current test (could be either a parent or child test).
+    /**
+     * Retrieves the current test (child test) for the current thread.
+     *
+     * @return The current ExtentTest object for the test.
+     */
     public static ExtentTest GetTest()
     {
+        // Synchronizing to ensure thread-safe retrieval of the child test
         synchronized (synclock)
-        {  // Ensure thread safety when accessing the current test
+        {
+            // Return the current child test
             return childTest.get();
         }
     }
 
-    // Clear the ThreadLocal instances for parent and child tests
-    public static void clearTest() {
+    /**
+     * Clears the ThreadLocal references for both parent and child tests.
+     */
+    public static void clearTest()
+    {
+        // Remove the parent and child tests from the ThreadLocal references
         parentTest.remove();
         childTest.remove();
     }
-
-
 }

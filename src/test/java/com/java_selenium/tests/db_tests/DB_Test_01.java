@@ -2,17 +2,45 @@ package com.java_selenium.tests.db_tests;
 
 import com.aventstack.extentreports.markuputils.Markup;
 import com.aventstack.extentreports.markuputils.MarkupHelper;
-import com.java_selenium.base.BaseClass_Emp_DB;
+import com.java_selenium.base.BaseClass;
 import org.testng.annotations.Test;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 
 
-public class DB_Test_01 extends BaseClass_Emp_DB
+public class DB_Test_01 extends BaseClass
 {
+
+    public static List<String> FetchEmployeeData() throws SQLException
+    {
+        List<String> employees = new ArrayList<>();
+        assert connection != null;
+        Statement stmt = connection.createStatement();
+        String query = "SELECT * FROM employees";
+        ResultSet rs = stmt.executeQuery(query);
+        while (rs.next())
+        {
+            // Make sure to fetch all columns
+            String employeeDetails = rs.getInt("employee_id") + "\t" +  // employee_id
+                    rs.getString("first_name") + "\t" +  // first_name
+                    rs.getString("last_name") + "\t" +   // last_name
+                    rs.getString("name")  + "\t" +      //  name
+                    rs.getString("position") + "\t" +    // position
+                    rs.getDouble("salary") + "\t" +      // salary
+                    rs.getString("hire_date") + "\t" +   // hire_date
+                    rs.getInt("department_id");          // department_id
+            employees.add(employeeDetails);
+        }
+        rs.close();
+        stmt.close();
+        return employees;
+    }
+
+
     // Fetch All Employee Details and print in console
     @Test
     public void Fetch_Emp_Details_01() throws SQLException

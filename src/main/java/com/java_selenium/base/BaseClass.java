@@ -8,64 +8,137 @@ import com.java_selenium.utils.extent_reports_manager.ExtentTestManager;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
-
-import java.lang.reflect.Method;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Date;
-import java.text.SimpleDateFormat;
-
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.edge.EdgeDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
+import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.Reporter;
 import org.testng.annotations.*;
 
+import java.lang.reflect.Method;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
+
 public class BaseClass
 {
+    // ThreadLocal to store WebDriver instance per thread
     private ThreadLocal<WebDriver> driver = new ThreadLocal<>();
 
-    // Before the first test method runs
+    // Static connection object for DB connection
+    protected static Connection connection;
+
+    // This method is called before any tests are executed (once per class)
     @BeforeClass
     public void Setup()
     {
-        // Create parent test at the beginning of the test run
-        // String className = this.getClass().getSimpleName();
-        // ExtentTestManager.CreateParentTest(className);
+        // Determine the test type dynamically based on the package name
+        String testType = determineTestType(this.getClass().getPackage().getName());
+
+        // Initialize the extent reporting system with the test type
+        ExtentManager.initialize(testType);
     }
 
-    // After all test methods have run
-    @AfterClass
-    public void TearDown()
+    private String determineTestType(String packageName)
     {
-        // Ensure that all reports are flushed after the tests are complete
-        ExtentManager.getInstance().flush();
+        if (packageName.contains("web_tests"))
+        {
+            return "web";
+        }
+        else if (packageName.contains("db_tests"))
+        {
+            return "db";
+        }
+        else if (packageName.contains("excel_tests"))
+        {
+            return "excel";
+        }
+        else
+        {
+            return "web"; // Default to web if not specified
+        }
     }
 
-    // Before each test method runs
+    // This method is called before each test method execution
     @BeforeMethod
-    public void StartBrowser(Method method)
+    public void StartTest(Method method)
     {
-        // Create a new test for each individual test run
+        // Extract class and method names for the test report
         String className = Reporter.getCurrentTestResult().getTestClass().getName().substring(
                 Reporter.getCurrentTestResult().getTestClass().getName().lastIndexOf('.') + 1
         );
+        String methodName = method.getName();
 
-        //String methodName = Reporter.getCurrentTestResult().getMethod().getMethodName();
-
-        // Get method name dynamically
-        String methodName = method.getName();  // Use 'method.getName()' instead of Reporter
-
-        ExtentTestManager.CreateTest(className, methodName);
-
-        // Get browser name from the system or configuration
-        String browserName = System.getProperty("browserName", "chrome");
-        if (browserName == null || browserName.isEmpty())
+        // Check test type and initialize corresponding resources (WebDriver, DB connection, etc.)
+        if (isWebTest(method))
         {
-            throw new IllegalArgumentException("Browser name cannot be null or empty");
+            ExtentTestManager.CreateTest(className, methodName);
+            initializeWebDriver();
+        }
+        else if (isDBTest(method))
+        {
+            ExtentTestManager.CreateTest(className, methodName);
+            initializeDBConnection();
+        }
+        else if (isExcelTest(method))
+        {
+            ExtentTestManager.CreateTest(className, methodName);
+        }
+    }
+
+    // This method is called after each test method execution
+    @AfterMethod
+    public void AfterTest(ITestResult result)
+    {
+        // Handle the test result and manage resources (close WebDriver, DB connection, etc.)
+        if (isWebTest(result.getMethod()))
+        {
+            handleTestResult(result, ExtentTestManager.GetTest());
+            GetDriver().quit(); // Close the WebDriver instance
+            driver.remove(); // Remove the WebDriver from the thread-local storage
+        }
+        else if (isDBTest(result.getMethod()))
+        {
+            handleTestResult(result, ExtentTestManager.GetTest());
+        }
+        else if (isExcelTest(result.getMethod()))
+        {
+            handleTestResult(result, ExtentTestManager.GetTest());
+        }
+    }
+
+    // This method is called after all tests in the class are finished
+    @AfterClass
+    public void TearDown()
+    {
+        // Close the database connection if it is still open
+        if (connection != null)
+        {
+            try
+            {
+                connection.close();
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace(); // Log the exception if the connection cannot be closed
+            }
         }
 
+        // Flush the ExtentReports instance to save all the test logs
+        ExtentManager.getInstance().flush();
+    }
+
+    // Initialize WebDriver based on the browser specified in the system properties
+    private void initializeWebDriver()
+    {
+        String browserName = System.getProperty("browserName", "chrome"); // Default to chrome if not specified
+
+        // Switch based on browser name to initialize the appropriate WebDriver instance
         switch (browserName.toLowerCase())
         {
             case "firefox":
@@ -80,13 +153,107 @@ public class BaseClass
             default:
                 throw new IllegalArgumentException("Unsupported browser: " + browserName);
         }
-
-        //GetDriver().manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
+        // Maximize the browser window
         GetDriver().manage().window().maximize();
     }
 
+    // Initialize the database connection
+    private void initializeDBConnection()
+    {
+        try
+        {
+            // Load the MySQL JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            String url = "jdbc:mysql://localhost:3306/employee_db"; // Database URL
+            String user = "root"; // Database username
+            String password = "root"; // Database password
 
-    // Get WebDriver instance
+            // Establish the database connection
+            connection = DriverManager.getConnection(url, user, password);
+            LogInfo("Connected to the database!"); // Log a success message
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace(); // Log any exception that occurs while connecting to the database
+        }
+    }
+
+    // Determine if the test is a web test based on the method's package name
+    private boolean isWebTest(Method method)
+    {
+        return method.getDeclaringClass().getPackage().getName().contains("web_tests");
+    }
+
+    // Determine if the test is a DB test based on the method's package name
+    private boolean isDBTest(Method method)
+    {
+        return method.getDeclaringClass().getPackage().getName().contains("db_tests");
+    }
+
+    // Determine if the test is an Excel test based on the method's package name
+    private boolean isExcelTest(Method method)
+    {
+        return method.getDeclaringClass().getPackage().getName().contains("excel_tests");
+    }
+
+    // Determine if the test method belongs to a web test based on its package name
+    private boolean isWebTest(ITestNGMethod method)
+    {
+        // Check if the package name of the class containing the test method contains "web_tests"
+        return method.getRealClass().getPackage().getName().contains("web_tests");
+    }
+
+    // Determine if the test method belongs to a DB test based on its package name
+    private boolean isDBTest(ITestNGMethod method)
+    {
+        // Check if the package name of the class containing the test method contains "db_tests"
+        return method.getRealClass().getPackage().getName().contains("db_tests");
+    }
+
+    // Determine if the test method belongs to an Excel test based on its package name
+    private boolean isExcelTest(ITestNGMethod method)
+    {
+        // Check if the package name of the class containing the test method contains "excel_tests"
+        return method.getRealClass().getPackage().getName().contains("excel_tests");
+    }
+
+
+    // Handle the test result and log it to the ExtentTest
+    private void handleTestResult(ITestResult result, ExtentTest test)
+    {
+        String stackTrace = result.getThrowable() != null ?
+                "<pre>Message: <br>" + result.getThrowable().getMessage() +
+                        "<br><br>Stack Trace: <br>" + Arrays.toString(result.getThrowable().getStackTrace()) + "</pre>" : "";
+
+        // Handle the failure case and log details
+        if (result.getStatus() == ITestResult.FAILURE)
+        {
+            String failureMessage = "<span style='color:red;'>Test failed</span>";
+            String failureStackTrace = stackTrace.isEmpty() ? "" : "<span style='color:red;'>" + stackTrace + "</span>";
+            test.fail(failureMessage, CaptureScreenshot(GetDriver(), GetScreenshotName()));
+            if (!stackTrace.isEmpty())
+            {
+                test.fail(failureStackTrace);
+                test.fail("Test Ended with Fail");
+            }
+        }
+        // Handle the skipped case and log details
+        else if (result.getStatus() == ITestResult.SKIP)
+        {
+            test.warning("Test skipped");
+            if (!stackTrace.isEmpty())
+            {
+                test.warning(stackTrace);
+                test.warning("Test Ended with Warning");
+            }
+        }
+        // Handle the success case and log a pass message
+        else if (result.getStatus() == ITestResult.SUCCESS) {
+            test.pass("Test Ended with Pass");
+        }
+    }
+
+    // Retrieve the WebDriver instance from thread-local storage
     public WebDriver GetDriver()
     {
         if (driver.get() == null)
@@ -96,85 +263,41 @@ public class BaseClass
         return driver.get();
     }
 
-
-    // After each test method runs
-    @AfterMethod
-    public void AfterTest(ITestResult result)
+    // Generate a unique screenshot name based on the current time
+    public static String GetScreenshotName()
     {
-        // Determine test result status and stack trace
-        String stackTrace = result.getThrowable() != null ?
-                "<pre>Message: <br>" + result.getThrowable().getMessage() +
-                        "<br><br>Stack Trace: <br>" + Arrays.toString(result.getThrowable().getStackTrace()) + "</pre>" : "";
-
         Date time = new Date();
         SimpleDateFormat dateFormat = new SimpleDateFormat("h_mm_ss");
         String formattedTime = dateFormat.format(time);
-        String screenShotName = "Screenshot_" + formattedTime + ".png";
-
-        // Handle FAILURE
-        if (result.getStatus() == ITestResult.FAILURE)
-        {
-            // Apply red color formatting for the message and stack trace
-            String failureMessage = "<span style='color:red;'>Test failed</span>";
-            String failureStackTrace = stackTrace.isEmpty() ? "" : "<span style='color:red;'>" + stackTrace + "</span>";
-
-            ExtentTestManager.GetTest().fail(failureMessage, CaptureScreenshot(GetDriver(), screenShotName));
-            if (!stackTrace.isEmpty())
-            {
-                ExtentTestManager.GetTest().fail(failureStackTrace);
-                ExtentTestManager.GetTest().fail("Test Ended with Fail");
-            }
-        }
-        else if (result.getStatus() == ITestResult.SKIP)
-        {
-            ExtentTestManager.GetTest().warning("Test skipped");
-            if (!stackTrace.isEmpty())
-            {
-                ExtentTestManager.GetTest().warning(stackTrace);
-                ExtentTestManager.GetTest().warning("Test Ended with Warning");
-            }
-        }
-        // Handle PASS
-        else if (result.getStatus() == ITestResult.SUCCESS)
-        {
-            ExtentTestManager.GetTest().pass("Test Ended with Pass");
-        }
-
-        ExtentTestManager.clearTest(); // Clear the ThreadLocal reference to the current test
-
-        GetDriver().quit();  // Quit the browser driver after the test
-        driver.remove();  // Clean up the thread-local instance
+        return "Screenshot_" + formattedTime + ".png";
     }
 
-
-
-
-    // Capture screenshot method
+    // Capture a screenshot and return it as a Media object for reporting
     public static Media CaptureScreenshot(WebDriver driver, String screenshotName)
     {
-        String screenshotBase64 = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BASE64);
+        String screenshotBase64 = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BASE64); // Take screenshot as base64 string
         return MediaEntityBuilder.createScreenCaptureFromBase64String(screenshotBase64, screenshotName).build();
     }
 
-    // Logs an informational message in the test report
+    // Log an informational message in the ExtentTest report
     public static void LogInfo(String msg)
     {
         ExtentTestManager.GetTest().info(msg);
     }
 
-
-    // Logs a pass message in the test report when a test passes
+    // Log a pass message in the ExtentTest report
     public static ExtentTest LogPass(String msg)
     {
         ExtentTestManager.GetTest().pass(msg);
         return ExtentTestManager.GetTest();
     }
 
-    // Logs a fail message in the test report when a test fails
+    // Log a fail message in the ExtentTest report
     public static ExtentTest LogFail(String msg)
     {
         ExtentTestManager.GetTest().fail(msg);
         return ExtentTestManager.GetTest();
     }
+
 
 }
