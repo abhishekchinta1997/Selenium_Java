@@ -25,7 +25,7 @@
         <dependency>
             <groupId>io.github.bonigarcia</groupId>
             <artifactId>webdrivermanager</artifactId>
-            <version>5.9.2</version>
+            <version>5.9.3</version>
         </dependency>
 
 
@@ -134,5 +134,21 @@
                 </configuration>
             </plugin>
         </plugins>
+
+        <testResources>
+            <!-- Keep default resources -->
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+            <!-- Add custom directory with path preservation -->
+            <testResource>
+                <directory>src/test/java</directory>
+                <includes>
+                    <include>**/com/java_selenium/resources/*.properties</include>
+                </includes>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
+
     </build>
 </project>

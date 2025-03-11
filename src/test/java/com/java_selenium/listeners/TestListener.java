@@ -13,14 +13,14 @@ public class TestListener extends BaseClass implements ITestListener
     public void onStart(ITestContext context)
     {
         // Create a parent test in the Extent report
-        ExtentTestManager.CreateParentTest(context.getName());
+        // ExtentTestManager.CreateParentTest(context.getName());
     }
 
     @Override
     public void onTestStart(ITestResult result)
     {
         // Create a new test in the Extent report
-        ExtentTestManager.CreateMethod(result.getMethod().getMethodName());
+        // DO NOT CREATE TESTS HERE. Let BaseClass handle it and Let @BeforeMethod handle it.
     }
 
     @Override
@@ -52,7 +52,7 @@ public class TestListener extends BaseClass implements ITestListener
     public void onFinish(ITestContext context)
     {
         // Clear the test instances from ThreadLocal
-        ExtentTestManager.clearTest();
+        //ExtentTestManager.clearTest();
     }
 
 }

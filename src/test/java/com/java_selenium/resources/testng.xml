@@ -1,7 +1,11 @@
 <suite name="Suite" parallel="tests" thread-count="3">
-    <test name="Test1">
+    <listeners>
+        <listener class-name="com.java_selenium.listeners.TestListener" />
+    </listeners>
+
+    <test name="WebTests">
         <classes>
-            <class name="com.java_selenium.tests.web_ui_tests.Example_Wait_Tests_01"/>
+            <class name="com.java_selenium.tests.web_ui_tests.Alert_Tests"/>
         </classes>
     </test>
     <!--<test name="Test2">

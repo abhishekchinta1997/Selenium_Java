@@ -16,7 +16,7 @@ import java.util.List;
 
 import java.time.Duration;
 
-public class Example_Wait_Tests_01 extends BaseClass
+public class Wait_Tests extends BaseClass
 {
     // Test
     @Test (priority = 1)

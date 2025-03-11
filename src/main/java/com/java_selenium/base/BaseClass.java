@@ -3,6 +3,7 @@ package com.java_selenium.base;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.MediaEntityBuilder;
 import com.aventstack.extentreports.model.Media;
+import com.java_selenium.utils.config_manager.ConfigManager;
 import com.java_selenium.utils.extent_reports_manager.ExtentManager;
 import com.java_selenium.utils.extent_reports_manager.ExtentTestManager;
 import org.openqa.selenium.OutputType;
@@ -46,7 +47,7 @@ public class BaseClass
 
     private String determineTestType(String packageName)
     {
-        if (packageName.contains("web_tests"))
+        if (packageName.contains("web_ui_tests"))
         {
             return "web";
         }
@@ -78,7 +79,9 @@ public class BaseClass
         if (isWebTest(method))
         {
             ExtentTestManager.CreateTest(className, methodName);
+            LogInfo("Starting WebDriver initialization...");
             initializeWebDriver();
+            LogInfo("WebDriver initialized successfully for test: " + methodName);
         }
         else if (isDBTest(method))
         {
@@ -110,6 +113,8 @@ public class BaseClass
         {
             handleTestResult(result, ExtentTestManager.GetTest());
         }
+
+        ExtentTestManager.clearTest(); // Clear the ExtentTest thread-local storage
     }
 
     // This method is called after all tests in the class are finished
@@ -136,7 +141,7 @@ public class BaseClass
     // Initialize WebDriver based on the browser specified in the system properties
     private void initializeWebDriver()
     {
-        String browserName = System.getProperty("browserName", "chrome"); // Default to chrome if not specified
+        String browserName = ConfigManager.getProperty("browserName");
 
         // Switch based on browser name to initialize the appropriate WebDriver instance
         switch (browserName.toLowerCase())
@@ -155,6 +160,7 @@ public class BaseClass
         }
         // Maximize the browser window
         GetDriver().manage().window().maximize();
+        LogInfo("Driver initialized for browser: " + browserName + ", Thread: " + Thread.currentThread().getName());
     }
 
     // Initialize the database connection
@@ -164,12 +170,12 @@ public class BaseClass
         {
             // Load the MySQL JDBC driver
             Class.forName("com.mysql.cj.jdbc.Driver");
-            String url = "jdbc:mysql://localhost:3306/employee_db"; // Database URL
-            String user = "root"; // Database username
-            String password = "root"; // Database password
+            String dbUrl = ConfigManager.getProperty("dbUrl"); // Database URL
+            String dbUser = ConfigManager.getProperty("dbUser"); // Database username
+            String dbPassword = ConfigManager.getProperty("dbPassword"); // Database password
 
             // Establish the database connection
-            connection = DriverManager.getConnection(url, user, password);
+            connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
             LogInfo("Connected to the database!"); // Log a success message
         }
         catch (Exception e)
@@ -181,7 +187,7 @@ public class BaseClass
     // Determine if the test is a web test based on the method's package name
     private boolean isWebTest(Method method)
     {
-        return method.getDeclaringClass().getPackage().getName().contains("web_tests");
+        return method.getDeclaringClass().getPackage().getName().contains("web_ui_tests");
     }
 
     // Determine if the test is a DB test based on the method's package name
@@ -200,7 +206,7 @@ public class BaseClass
     private boolean isWebTest(ITestNGMethod method)
     {
         // Check if the package name of the class containing the test method contains "web_tests"
-        return method.getRealClass().getPackage().getName().contains("web_tests");
+        return method.getRealClass().getPackage().getName().contains("web_ui_tests");
     }
 
     // Determine if the test method belongs to a DB test based on its package name

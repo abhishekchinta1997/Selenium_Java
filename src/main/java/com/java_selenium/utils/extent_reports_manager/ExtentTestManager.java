@@ -32,8 +32,8 @@ public class ExtentTestManager
             ExtentTest test = ExtentManager.getInstance().createTest(testName);
 
             // Store the created parent test in the ThreadLocal and map
-            parentTest.set(test);
             parentTestMap.put(testName, test);
+            parentTest.set(test);
 
             // Return the created test
             return test;
@@ -49,36 +49,31 @@ public class ExtentTestManager
      */
     public static ExtentTest CreateTest(String parentName, String testName)
     {
-        // Synchronizing to ensure that the test creation is thread-safe
+        // Synchronizing access to ensure thread-safety for shared resources
         synchronized (synclock)
         {
-            ExtentTest parentTestInstance;
 
-            // If the parent test doesn't exist, create it and store it
-            if (!parentTestMap.containsKey(parentName))
-            {
-                parentTestInstance = ExtentManager.getInstance().createTest(parentName);
-                parentTestMap.put(parentName, parentTestInstance);
-            }
-            else
-            {
-                // Retrieve the existing parent test from the map
-                parentTestInstance = parentTestMap.get(parentName);
-            }
+            // Retrieve or create a parent test instance from the map.
+            // If no entry exists for the parentName, create a new parent test using ExtentManager.
+            ExtentTest parentTestInstance = parentTestMap.computeIfAbsent(parentName,
+                    name -> ExtentManager.getInstance().createTest(name)
+            );
 
-            // Set the parent test for the current thread
+            // Set the current thread's parent test instance.
+            // Assuming 'parentTest' is a ThreadLocal or similar mechanism to maintain thread-specific data
             parentTest.set(parentTestInstance);
 
-            // Create a child test (node) under the parent test
-            ExtentTest test = parentTestInstance.createNode(testName);
+            // Create a child node (test) under the parent test instance.
+            ExtentTest childTestInstance = parentTestInstance.createNode(testName);
 
-            // Set the child test for the current thread
-            childTest.set(test);
+            // Set the current thread's child test instance.
+            childTest.set(childTestInstance);
 
-            // Return the created child test
-            return test;
+            // Return the child test instance, which is now associated with the parent.
+            return childTestInstance;
         }
     }
+
 
     /**
      * Creates a method-level test (child test) under the current parent test.
@@ -149,3 +144,5 @@ public class ExtentTestManager
         childTest.remove();
     }
 }
+
+
