@@ -180,7 +180,3 @@ Abhishek Chinta
 GitHub: https://github.com/abhishekchinta1997
 
 ## Happy Testing! 🚀
-
-            ├── api_tests
-            ├── db_tests
-            └── excel_tests
